@@ -16,7 +16,7 @@ google-api-core==2.25.1
 google-api-python-client==2.176.0
 google-auth==2.40.3
 google-auth-httplib2==0.2.0
-google-generativeai==0.8.5
+google-genai==1.25.0
 googleapis-common-protos==1.70.0
 gotrue==2.12.3
 grpcio==1.73.1
@@ -70,6 +70,7 @@ storage3==0.12.0
 StrEnum==0.4.15
 supabase==2.16.0
 supafunc==0.10.1
+tenacity==8.5.0
 threadpoolctl==3.6.0
 tqdm==4.67.1
 typer==0.16.0
