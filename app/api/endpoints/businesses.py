@@ -27,7 +27,7 @@ async def create_business(business_data: schemas.BusinessCreate):
     - **whatsapp_phone_number_id**: The ID from the Meta for Developers platform.
     - **system_prompt**: The base personality prompt for the AI assistant.
     """
-    try:
+    try:	
         logger.info(f"Attempting to create business: {business_data.business_name}")
 
         # The .dict() method is deprecated, use .model_dump()

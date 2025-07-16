@@ -157,3 +157,11 @@ class ActionPlan(BaseModel):
     """
     response_text: str = Field(..., description="The conversational reply to send to the user.")
     tool_calls: List[ToolCall] = Field(default=[], description="A list of background actions to trigger.")
+    
+
+class KnowledgeIngestRequest(BaseModel):
+    text_content: str
+    source_name: str # e.g., "From Website About Page"
+    
+class MenuIngestRequest(BaseModel):
+    menu_text: str

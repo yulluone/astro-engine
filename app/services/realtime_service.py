@@ -11,7 +11,7 @@ from ..api.schemas import ActionPlan
 
 from ..db import supabase
 from ..config import Config
-from . import gemini_service, openai_service
+from . import gemini_service, openai_service, query_service
 from ..utils.json_parser import safe_json_from_llm
 
 
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 # This will eventually come from a config or DB
 CAPABILITY_PROMPT = """
-- You *can* answer questions based on the business's knowledge base (hours, locations).
+- You *can* help customers based on the business's knowledge base (hours, locations).
 - You *can* look up product information, prices, and promotions.
 - You *can* learn customer preferences for future recommendations.
 - You *cannot* yet process payments or finalize delivery orders. If a user tries to complete an order, guide them by saying "I can get that ready for you! To finalize the payment and delivery, please call us at [phone number] or click this link to our online portal: [link]."
@@ -34,18 +34,36 @@ cap = """
 # --- SYSTEM-LEVEL CORE PROMPT ---
 # This is our application's "firmware". It enforces the fundamental rules
 # of how the AI must behave, regardless of the business's specific persona.
-# In app/services/realtime_service.py
 
-SYSTEM_CORE_PROMPT = """
+
+SYSTEM_CORE_PROMPTTT = """
 **CORE OPERATIONAL RULES (NON-NEGOTIABLE):**
 
-1.  **GROUNDING:** You MUST base your answers *exclusively* on the information provided in the "CONTEXT" section. Do not use any outside knowledge or make assumptions. If the context is empty or does not contain the answer, you do not know the answer.
+1.  **GROUNDING:** You MUST base your answers *exclusively* on the information provided in the "CONTEXT" section. Do not use any outside knowledge or make assumptions.
 
-2.  **TOOL-FORCING:**
-    - **IF** a user asks about a specific item or product AND the answer is NOT in the CONTEXT, **THEN** you MUST use the `lookup_product_info` tool. Your `response_text` in this case must be a simple "loading message" like "Let me check on that for you... ⏳".
-    - **ELSE IF** you cannot answer a factual question for any other reason, **THEN** you MUST use the `request_human_intervention` tool and your `response_text` must be "That's a great question, let me get my supervisor to help with that."
+2.  **SYNTHESIS:** It is your job to synthesize a complete and helpful answer from the different pieces of information in the CONTEXT. If the context mentions that hours vary by location, your answer must reflect that nuance. Do not just state that you don't have a single answer.
 
-3.  **NO HALLUCINATION:** You are strictly forbidden from inventing products, information, prices, or any other factual information. If you don't know, you MUST follow the TOOL-FORCING rule.
+3.  **TOOL-FORCING:**
+    - **IF** a user asks about a specific item or product AND the cant synthethise an aswer from the CONTEXT, **THEN** you MUST use the `lookup_product_info` tool. Your `response_text` in this case must be a simple "loading message".
+    - **ELSE IF** after following all other rules, you still cannot construct a factual answer from the CONTEXT, **THEN** you MUST use the `request_human_intervention` tool. Ask the user to hold on as you get the info.
+
+4.  **NO HALLUCINATION:** You are strictly forbidden from inventing facts not present in the CONTEXT. If you don't know, you MUST follow the TOOL-FORCING rule.
+"""
+
+SYSTEM_CORE_PROMPT = """
+**RULES OF ENGAGEMENT (NON-NEGOTIABLE):**
+
+1.  **GROUNDING:** Help customers using only information provided in the "CONTEXT" section. The goal is to be helpful and when can't that you're working on it, make users feel heard.
+
+2.  **SYNTHESIS:** It is your job to synthesize a complete and helpful response from the different pieces of information in the CONTEXT.
+
+3.  **TOOLS:**
+    - You have tools you can use to get more information to help you help the user. When you decide to use a tool, let the user know what you're upto, I'm looking up this for you.
+				- When you find you'self with not information from context and no tools to use to find the needed information here is where you request human intervention, let the user know that you'll get the info and get back to them.
+				- When you have used tools and you still have no info, here is where you need to get clever, depending on what the type of user and what they wants, you can suggest alternatives (upsell) or kindly say you tried but couldn't help or request human intervention like the case above.
+
+4.  **NO HALLUCINATION:** You are strictly forbidden from inventing facts. If you don't know, you dont know.
+5. Stick to your role, dont go outside your scope as a customer assistant assistant for the business.
 """
 
 
@@ -230,8 +248,12 @@ class RealtimeService:
         # C) RAG Knowledge (always attempt this)
         try:
             if self.user_message:
-                embedding = openai_service.get_embedding(self.user_message)
-                rag_res = supabase.rpc('match_knowledge', {'query_embedding': embedding, 'p_business_id': str(self.business.id), 'match_threshold': 0.72, 'match_count': 3}).execute()
+                refined_query = query_service.refine_user_query(self.user_message)
+                embedding = openai_service.get_embedding(refined_query)
+                rag_res = supabase.rpc('match_knowledge', {'query_embedding': embedding, 'p_business_id': str(self.business.id), 'match_threshold': 0.2, 'match_count': 5}).execute()
+                logger.info(f"------------------------------------------------------------------------")
+                logger.info(f"rag knowledge res: {rag_res}")
+                logger.info(f"------------------------------------------------------------------------")
                 self.context.rag_knowledge = [item['content'] for item in (rag_res.data or [])]
             else:
                 logger.warning(f"Could not fetch RAG knowledge. Proceeding without it. self.user_message is None")
@@ -241,7 +263,7 @@ class RealtimeService:
 
         logger.info(f"Context gathered: {len(self.context.history)} history, {len(self.context.long_term_memory)} memory, {len(self.context.rag_knowledge)} RAG chunks.")
 
-    def _get_llm_action_plan(self) -> ActionPlan | None:
+    def _get_llm_action_plan(self) -> ActionPlan | None:	
         """Step 4: Constructs the prompt and calls Gemini to get a structured action plan."""
         if not self.business: return None
         logger.info("[STEP 4/5] Calling Gemini for unified action plan...")

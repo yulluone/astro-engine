@@ -5,7 +5,8 @@ from fastapi import APIRouter, HTTPException, status, Path
 from ... import db
 from ...api import schemas
 # Import our new, powerful services
-from ...services import openai_service, product_service, tagging_service
+from ...services import openai_service, product_service, tagging_service, menu_ingestion_service
+
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ router = APIRouter(
 )
 
 @router.post(
-    "/",
+    		"/",
     response_model=schemas.ProductRead,
     status_code=status.HTTP_201_CREATED,
     summary="Create a product with AI-driven description and tagging"
@@ -88,3 +89,32 @@ def create_product( # Removed async as supabase-py v1 is sync
     except Exception as e:
         logger.error(f"API Error adding product: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error.")
+    
+@router.post(
+    "/batch-from-text",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Create multiple products from a block of menu text"
+)
+def create_products_from_text(
+    request_data: schemas.MenuIngestRequest, # New schema needed
+    business_id: UUID = Path(..., description="The UUID of the business")
+):
+    """
+    Accepts a large block of unstructured text (e.g., a copied-and-pasted menu),
+    and initiates a background task to parse, create, and tag products.
+    """
+    # For a long-running process like this, we should ideally use a background task.
+    # For the MVP, we can run it synchronously and let the client wait.
+    # In a future sprint, we would queue this in a `batch_tasks` queue.
+    
+    logger.info(f"API: Received request to ingest menu text for business {business_id}.")
+    
+    try:
+        result = menu_ingestion_service.ingest_menu_from_text(
+            business_id=business_id,
+            menu_text=request_data.menu_text
+        )
+        return result
+    except Exception as e:
+        logger.error(f"API Error ingesting menu text: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to process menu text.")
