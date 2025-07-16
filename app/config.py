@@ -26,3 +26,7 @@ class Config:
         raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set in the environment.")
     if not OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY must be set in the environment.")
+    
+				# Default to False for production safety
+    DEV_MODE: bool = os.getenv("DEV_MODE", "false").lower() in ('true', '1', 't')
+    

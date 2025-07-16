@@ -19,7 +19,7 @@ def setup_logging():
         # Create a handler to write log messages to the console (standard output)
         console_handler = logging.StreamHandler(sys.stdout)
         
-        # Create a formatter to define the log message format
+        # Create a formatter to define the log mes	sage format
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S'

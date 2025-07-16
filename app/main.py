@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from . import config # This will run the checks in config.py on startup
-from .api.endpoints import businesses, tags, products
+from .api.endpoints import businesses, tags, products, webhooks
 
 # Import the new setup function
 from .logging_config import setup_logging
@@ -28,3 +28,4 @@ def read_root():
 app.include_router(businesses.router)
 app.include_router(tags.router)
 app.include_router(products.router)
+app.include_router(webhooks.router) 

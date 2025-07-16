@@ -3,6 +3,7 @@
 from pydantic import BaseModel, UUID4, Field, model_validator
 from typing import Optional, List
 from datetime import datetime
+from enum import Enum
 
 # ===================================================================
 #                       Business Schemas
@@ -120,3 +121,39 @@ class PromotionRead(PromotionBase):
 
     class Config:
         from_attributes = True
+        
+
+# In app/api/schemas.py
+
+# ... (all your other schemas are above this) ...
+
+# ===================================================================
+#                LLM Action & Tool Schemas
+# ===================================================================
+
+class ToolCallArgument(BaseModel):
+    # Using a generic dict for now, can be made more specific later
+    summary_of_new_info: Optional[str] = None
+    product_name: Optional[str] = None
+    category: Optional[str] = None
+    reason: Optional[str] = None
+
+# Step 1: Define the Enum of all valid tool names
+class ToolName(str, Enum):
+    QUEUE_FOR_PROFILING = "queue_for_profiling"
+    REQUEST_HUMAN_INTERVENTION = "request_human_intervention"
+    LOOKUP_PRODUCT_INFO = "lookup_product_info"
+
+class ToolCall(BaseModel):
+    name: ToolName
+    arguments: ToolCallArgument
+
+class ActionPlan(BaseModel):
+    """
+    The structured response we expect from the main reasoning LLM call.
+    This schema is passed to Gemini to constrain its output.
+    - response_text: The conversational reply to send to the user.	
+    - tool_calls: A list of allowed background actions to trigger.	
+    """
+    response_text: str = Field(..., description="The conversational reply to send to the user.")
+    tool_calls: List[ToolCall] = Field(default=[], description="A list of background actions to trigger.")
