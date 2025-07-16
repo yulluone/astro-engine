@@ -12,4 +12,4 @@ COPY . .
 EXPOSE 8015
 
 # Command to run the Gunicorn production server for our FastAPI app.
-CMD ["python", "-m", "gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "app.main:app"]
+CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8015", "app.main:app"]
