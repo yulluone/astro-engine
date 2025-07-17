@@ -24,7 +24,14 @@ def dispatch_events():
                 logger.info(f"DISPATCHER: Processing event {event_id} of type '{event_type}'")
 
                 # --- The Routing Logic ---
-                if event_type == 'new_inbound_message':
+                # --- NEW ROUTE FOR READ RECEIPTS ---
+                if event_type == 'send_read_receipt':
+                    # This is also a high-priority task.
+                    task = {"event_type": "execute_read_receipt", "payload": payload}
+                    supabase.table('realtime_tasks').insert(task).execute()
+                    logger.info(f"DISPATCHER: Event {event_id} dispatched to 'realtime_tasks' for read receipt.")
+
+                elif event_type == 'new_inbound_message':
                     # All inbound messages go to the realtime queue first
                     task = {"event_type": "handle_user_message", "payload": payload}
                     supabase.table('realtime_tasks').insert(task).execute()
@@ -67,8 +74,17 @@ def process_realtime_tasks():
                 logger.info(f"REALTIME: Processing task {task_id} of type '{event_type}'")
 
                 try:
+                    # --- NEW LOGIC FOR READ RECEIPTS ---
+                    if event_type == 'execute_read_receipt':
+                        business_id = payload.get('business_id')
+                        message_id = payload.get('message_id')
+                        if not all([business_id, message_id]):
+                            raise ValueError("Missing business_id or message_id for read receipt.")
+                        
+                        outbound_service.send_read_receipt_and_typing(business_id, message_id)
+
                     # THE FIX: Check against the correct task event types.
-                    if event_type == 'handle_user_message':
+                    elif event_type == 'handle_user_message':
                         # The payload of the task IS the original dispatcher event payload.
                         service_instance = RealtimeService(task_payload=payload)
                         service_instance.run()
