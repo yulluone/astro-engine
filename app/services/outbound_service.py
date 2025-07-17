@@ -100,7 +100,7 @@ def send_read_receipt_and_typing(business_id: UUID, message_id: str):
     }
     
     headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
-    url = f"https://graph.facebook.com/v22.0/{phone_number_id}/messages"
+    url = f"https://graph.facebook.com/v23.0/{phone_number_id}/messages"
     
     logger.info(f"OUTBOUND: Sending 'read' status for message {message_id}...")
     try:
