@@ -343,7 +343,8 @@ class RealtimeService:
         
         # A) Short-term history (only if a customer exists)
         if self.customer:
-            history_res = supabase.table('conversations').select('role, content').eq('customer_id', self.customer.id).order('created_at', desc=True).limit(8).execute()
+            history_res = supabase.table('conversations').select('role, content').eq('customer_id', self.customer.id).order('created_at', desc=True).limit(20).execute()
+            logger.info(f"Cuatomer history response from supabase: {history_res}")
             self.context.history = list(reversed(history_res.data)) if history_res.data else []
 
         # B) Long-term memory (only if a customer exists)
