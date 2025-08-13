@@ -18,7 +18,7 @@ def refine_user_query(
     Uses a fast LLM with conversational and business context to expand a raw user
     message into a rich, semantically-dense search query string for vector search.
     """
-    logger.info(f"Query Expansion: Starting for raw message: '{raw_user_message}'")
+    logger.info(f"Query Expansion: Starting for raw message: '{raw_user_message, conversation_history, business_bio}'")
     
     if not raw_user_message or not raw_user_message.strip():
         logger.warning("Query Expansion: Raw message is empty, returning empty string.")
