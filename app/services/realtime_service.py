@@ -355,7 +355,7 @@ class RealtimeService:
         # C) RAG Knowledge (always attempt this)
         try:
             if self.user_message:
-                refined_query = query_service.refine_user_query(raw_user_message=self.user_message, business_name=self.business.business_name, business_bio=self.business.bio, conversation_history=self.context.history )
+                refined_query = query_service.refine_user_query(raw_user_message=self.user_message, business_name=self.business.business_name, business_bio=self.business.bio, conversation_history=self.context.history, business_prompt=self.business.system_prompt )
                 embedding = openai_service.get_embedding(refined_query)
                 rag_res = supabase.rpc('match_knowledge', {'query_embedding': embedding, 'p_business_id': str(self.business.id), 'match_threshold': 0.2, 'match_count': 5}).execute()
                 logger.info(f"------------------------------------------------------------------------")

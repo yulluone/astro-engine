@@ -10,7 +10,8 @@ def refine_user_query(
 				raw_user_message: str, 
 				business_name: str,
 				business_bio: str,
-				conversation_history: List[Dict]
+				conversation_history: List[Dict],
+				business_prompt
 ) -> str:
 				"""
 				Uses a fast LLM with context to refine a user message into an optimal search query.
@@ -28,6 +29,7 @@ def refine_user_query(
 					**BUSINESS CONTEXT:**
 					- Name: {business_name}
 					- Bio: {business_bio}
+					- Business Prompt: This will help you understand the task of the response AI because you are gettign information for them: {business_prompt}
 
 					**RECENT CONVERSATION:**
 					{json.dumps(conversation_history)}
