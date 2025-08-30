@@ -76,12 +76,12 @@ def process_realtime_tasks():
                 try:
                     # --- NEW LOGIC FOR READ RECEIPTS ---
                     if event_type == 'execute_read_receipt':
-                        business_id = payload.get('business_id')
+                        tenant_id = payload.get('tenant_id')
                         message_id = payload.get('message_id')
-                        if not all([business_id, message_id]):
-                            raise ValueError("Missing business_id or message_id for read receipt.")
+                        if not all([tenant_id, message_id]):
+                            raise ValueError("Missing tenant_id or message_id for read receipt.")
                         
-                        outbound_service.send_read_receipt_and_typing(business_id, message_id)
+                        outbound_service.send_read_receipt_and_typing(tenant_id, message_id)
 
                     # THE FIX: Check against the correct task event types.
                     elif event_type == 'handle_user_message':
@@ -93,15 +93,15 @@ def process_realtime_tasks():
                         # The payload of the task IS the original dispatcher event payload.
                         config = payload.get('config', {})
                         
-                        business_id = config.get('business_id')
+                        tenant_id = config.get('tenant_id')
                         channel = config.get('channel')
                         message_payload = payload.get('data')
                         
-                        if not all([business_id, channel, message_payload]):
-                            raise ValueError("Missing business_id, channel, or data payload for sending message.")
+                        if not all([tenant_id, channel, message_payload]):
+                            raise ValueError("Missing tenant_id, channel, or data payload for sending message.")
                         
                         if channel == 'whatsapp':
-                            outbound_service.send_whatsapp_message(business_id=business_id, message_payload=message_payload)
+                            outbound_service.send_whatsapp_message(tenant_id=tenant_id, message_payload=message_payload)
                         else:
                             logger.warning(f"REALTIME: Outbound channel '{channel}' not supported yet.")
                             

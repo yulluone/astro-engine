@@ -6,19 +6,19 @@ from datetime import datetime
 from enum import Enum
 
 # ===================================================================
-#                       Business Schemas
+#                       tenant Schemas
 # ===================================================================
 
-class BusinessBase(BaseModel):
-    business_name: str
+class tenantBase(BaseModel):
+    tenant_name: str
     whatsapp_number: str
     whatsapp_phone_number_id: str
     system_prompt: Optional[str] = "You are a helpful assistant."
 
-class BusinessCreate(BusinessBase):
+class tenantCreate(tenantBase):
     pass
 
-class BusinessRead(BusinessBase):
+class tenantRead(tenantBase):
     id: UUID4
     created_at: datetime
 
@@ -59,7 +59,7 @@ class ProductCreate(ProductBase):
 
 class ProductRead(ProductBase):
     id: UUID4
-    business_id: UUID4
+    tenant_id: UUID4
     created_at: datetime
     # We can enrich this later to show associated tags.
     # associated_tags: List[TagRead] = [] 
@@ -81,7 +81,7 @@ class KnowledgeCreate(KnowledgeBase):
 
 class KnowledgeRead(KnowledgeBase):
     id: UUID4
-    business_id: UUID4
+    tenant_id: UUID4
 
     class Config:
         from_attributes = True
@@ -117,7 +117,7 @@ class PromotionCreate(PromotionBase):
 class PromotionRead(PromotionBase):
     """Schema for returning promotion data."""
     id: UUID4
-    business_id: UUID4
+    tenant_id: UUID4
 
     class Config:
         from_attributes = True

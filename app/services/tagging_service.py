@@ -12,11 +12,11 @@ from deprecated import deprecated
 logger = logging.getLogger(__name__)
 
 # --- Main Orchestration Function ---
-def suggest_and_reconcile_tags(business_id: UUID, product_name: str, product_description: str, product_embedding: list[float]) -> list[UUID]:
+def suggest_and_reconcile_tags(tenant_id: UUID, product_name: str, product_description: str, product_embedding: list[float]) -> list[UUID]:
     """Orchestrates the 3-phase intelligent tagging workflow."""
     
     # Phase 1: Get candidates using pre-calculated embeddings
-    candidate_tags = _get_candidate_tags_by_vector(business_id, product_embedding)
+    candidate_tags = _get_candidate_tags_by_vector(tenant_id, product_embedding)
 
     # Phase 2: Use AI to review and refine
     refined_tag_names = _get_ai_refined_tags(product_name, product_description, candidate_tags)
@@ -24,19 +24,19 @@ def suggest_and_reconcile_tags(business_id: UUID, product_name: str, product_des
         return []
 
     # Phase 3: Reconcile with DB, creating new tags (with embeddings) as needed
-    final_tag_ids = _reconcile_tags_in_db(business_id, refined_tag_names)
+    final_tag_ids = _reconcile_tags_in_db(tenant_id, refined_tag_names)
     return final_tag_ids
 
 # --- Private Helper Functions for Each Phase ---
 
-def _get_candidate_tags_by_vector(business_id: UUID, product_embedding: list[float], threshold: float = 0.30, limit: int = 10) -> list[dict]:
+def _get_candidate_tags_by_vector(tenant_id: UUID, product_embedding: list[float], threshold: float = 0.30, limit: int = 10) -> list[dict]:
     """PHASE 1:  Uses the new DB function for efficient vector search."""
     logger.info("Tagging Phase 1: Using the DB function (match_tags) for search.")
     
     # Call the new RPC function you created earlier.
     tags_res = supabase.rpc('match_tags', {
         'query_embedding': product_embedding,
-        'p_business_id': str(business_id),
+        'p_tenant_id': str(tenant_id),
         'match_threshold': threshold,
         'match_count': limit
     }).execute()
@@ -89,16 +89,16 @@ def _get_ai_refined_tags(product_name: str, product_description: str, candidate_
         return []
 
 
-def _reconcile_tags_in_db(business_id: UUID, refined_names: list[str]) -> list[UUID]: # Removed candidate_tags dependency
+def _reconcile_tags_in_db(tenant_id: UUID, refined_names: list[str]) -> list[UUID]: # Removed candidate_tags dependency
     """
     PHASE 3 (Hardened): Takes the final list of names from the AI, checks if each one
     exists in the DB, creates it if not, and returns all final UUIDs.
     """
     logger.info(f"Tagging Phase 3: Reconciling {len(refined_names)} final tags with DB.")
     
-    # Fetch ALL existing tags for the business just once to create a lookup map.
+    # Fetch ALL existing tags for the tenant just once to create a lookup map.
     # This is more efficient than querying the DB inside a loop.
-    existing_tags_res = supabase.table('product_tags').select('id, tag_name').eq('business_id', business_id).execute()
+    existing_tags_res = supabase.table('product_tags').select('id, tag_name').eq('tenant_id', tenant_id).execute()
     existing_tags_map = {tag['tag_name']: tag['id'] for tag in (existing_tags_res.data or [])}
     
     final_tag_ids = set()
@@ -116,7 +116,7 @@ def _reconcile_tags_in_db(business_id: UUID, refined_names: list[str]) -> list[U
             try:
                 new_tag_embedding = openai_service.get_embedding(name_lower)
                 new_tag_data = {
-                    "business_id": str(business_id), 
+                    "tenant_id": str(tenant_id), 
                     "tag_name": name_lower,
                     "embedding": new_tag_embedding
                 }
@@ -138,7 +138,7 @@ def _reconcile_tags_in_db(business_id: UUID, refined_names: list[str]) -> list[U
 
 
 @deprecated(version="1.0", reason="This function is outdated, use new_function() instead.")
-def _get_candidate_tags_by_vector_python_side(business_id: UUID, product_embedding: list[float], limit: int = 10) -> list[dict]:
+def _get_candidate_tags_by_vector_python_side(tenant_id: UUID, product_embedding: list[float], limit: int = 10) -> list[dict]:
     """
     [DEPRECATED] PHASE 1: Performs a vector search against PRE-STORED tag embeddings.
     This is now much faster as it does not call any external AI services.
@@ -151,7 +151,7 @@ def _get_candidate_tags_by_vector_python_side(business_id: UUID, product_embeddi
     # Fetching all tags is inefficient at scale, but works for the MVP.
     # The real solution is a DB function.
     cand = supabase.rpc("match_tags", )
-    tags_res = supabase.table('product_tags').select('id, tag_name, embedding').eq('business_id', str(business_id)).not_.is_('embedding', None).execute()
+    tags_res = supabase.table('product_tags').select('id, tag_name, embedding').eq('tenant_id', str(tenant_id)).not_.is_('embedding', None).execute()
     
     if not tags_res.data: return []
 

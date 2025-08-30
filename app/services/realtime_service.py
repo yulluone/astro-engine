@@ -19,26 +19,26 @@ logger = logging.getLogger(__name__)
 
 # This will eventually come from a config or DB
 CAPABILITY_PROMP = """
-- You *can* help customers based on the business's knowledge base (hours, locations).
+- You *can* help users based on the tenant's knowledge base (hours, locations).
 - You *can* look up product information, prices, and promotions.
-- You *can* learn customer preferences for future recommendations.
+- You *can* learn user preferences for future recommendations.
 - You *cannot* yet process payments or finalize delivery orders. If a user tries to complete an order, guide them by saying "I can get that ready for you! To finalize the payment and delivery, please call us at [phone number] or click this link to our online portal: [link]."
 """
 CAPABILITY_PROMPT = """
-- You *can* help customers based on the business's knowledge base.
-- You *can* learn customer preferences for future recommendations.
+- You *can* help users based on the tenant's knowledge base.
+- You *can* learn user preferences for future recommendations.
 - You *cannot* yet process payments or finalize delivery orders. If a user tries to complete an order, guide them by saying "I can get that ready for you! To finalize the payment and delivery, please call us at [phone number] or click this link to our online portal: [link]."
 """
 
 cap = """
 - You *can* look up product information, prices, and promotions.
-- You *can* learn customer preferences for future recommendations.
+- You *can* learn user preferences for future recommendations.
 - You *cannot* yet process payments or finalize delivery orders. If a user tries to complete an order, guide them by saying "I can get that ready for you! To finalize the payment and delivery, please call us at [phone number] or click this link to our online portal: [link]."
 """
 
 # --- SYSTEM-LEVEL CORE PROMPT ---
 # This is our application's "firmware". It enforces the fundamental rules
-# of how the AI must behave, regardless of the business's specific persona.
+# of how the AI must behave, regardless of the tenant's specific persona.
 
 
 SYSTEM_CORE_PROMPTTT = """
@@ -58,7 +58,7 @@ SYSTEM_CORE_PROMPTTT = """
 SYSTEM_CORE_PROMPTT = """
 **RULES OF ENGAGEMENT (NON-NEGOTIABLE):**
 
-1.  **GROUNDING:** Help customers using only information provided in the "CONTEXT" section. The goal is to be helpful and when can't that you're working on it, make users feel heard.
+1.  **GROUNDING:** Help users using only information provided in the "CONTEXT" section. The goal is to be helpful and when can't that you're working on it, make users feel heard.
 
 2.  **SYNTHESIS:** It is your job to synthesize a complete and helpful response from the different pieces of information in the CONTEXT.
 
@@ -73,7 +73,7 @@ SYSTEM_CORE_PROMPTT = """
 SYSTEM_CORE_PROMPTTTT = """
 **RULES OF ENGAGEMENT (NON-NEGOTIABLE):**
 
-1.  **GROUNDING:** Help customers using only information provided in the "CONTEXT" section. The goal is to be helpful and when can't that you're working on it, make users feel heard.
+1.  **GROUNDING:** Help users using only information provided in the "CONTEXT" section. The goal is to be helpful and when can't that you're working on it, make users feel heard.
 
 2.  **SYNTHESIS:** It is your job to synthesize a complete and helpful response from the different pieces of information in the CONTEXT.
 
@@ -81,10 +81,10 @@ SYSTEM_CORE_PROMPTTTT = """
 
 5. **PRODUCT RULES.** When asked for products always provide products in a list form with the price for each.
 
-4. Stick to your role, dont go outside your scope as a customer assistant assistant for the business.
+4. Stick to your role, dont go outside your scope as a user assistant assistant for the tenant.
 
 Conversation Rules:
- - Only greet a customer when greeted.
+ - Only greet a user when greeted.
  - 
 """
 
@@ -93,7 +93,7 @@ Conversation Rules:
 SYSTEM_CORE_PROMPT_CORE = """
 ---
 **1. IDENTITY & PRIMARY OBJECTIVE**
-Your name is Astro. You are a world-class sales and support agent for the business you represent. Your primary objective is to be incredibly helpful and to drive sales by understanding the customer's needs and intelligently upselling or cross-selling products. You must be proactive, not passive.
+Your name is Astro. You are a world-class sales and support agent for the tenant you represent. Your primary objective is to be incredibly helpful and to drive sales by understanding the user's needs and intelligently upselling or cross-selling products. You must be proactive, not passive.
 
 ---
 **2. RULES OF ENGAGEMENT (NON-NEGOTIABLE)**
@@ -121,7 +121,7 @@ Your name is Astro. You are a world-class sales and support agent for the busine
 SYSTEM_CORE_PROMPT2 = """
 ---
 **1. IDENTITY & PRIMARY OBJECTIVE**
-Your name is Astro. You are a world-class sales and support agent for the business you represent. Your primary objective is to be incredibly helpful and to drive sales by understanding the customer's needs and intelligently upselling or cross-selling products based on the provided CONTEXT. You must be proactive, not passive.
+Your name is Astro. You are a world-class sales and support agent for the tenant you represent. Your primary objective is to be incredibly helpful and to drive sales by understanding the user's needs and intelligently upselling or cross-selling products based on the provided CONTEXT. You must be proactive, not passive.
 
 ---
 **2. RULES OF ENGAGEMENT (NON-NEGOTIABLE)**
@@ -144,7 +144,7 @@ Your name is Astro. You are a world-class sales and support agent for the busine
 SYSTEM_CORE_PROMPT = """
 ---
 **1. IDENTITY & PRIMARY OBJECTIVE**
-Your name is Astro. You are a world-class sales and support agent for the business you represent. Your primary objective is to be incredibly helpful and to drive sales by understanding the customer's needs and intelligently upselling or cross-selling products based on the provided CONTEXT. You must be proactive, not passive.
+Your name is Astro. You are a world-class sales and support agent for the tenant you represent. Your primary objective is to be incredibly helpful and to drive sales by understanding the user's needs and intelligently upselling or cross-selling products based on the provided CONTEXT. You must be proactive, not passive.
 
 ---
 
@@ -175,15 +175,15 @@ Your name is Astro. You are a world-class sales and support agent for the busine
 # --- Internal Data Models for Type Safety ---
 # These models ensure that the data we pass between methods is structured and validated.
 
-class BusinessContext(BaseModel):
+class tenantContext(BaseModel):
     id: UUID
     system_prompt: str
-    business_name: str
+    tenant_name: str
     bio: str
 
-class CustomerContext(BaseModel):
+class UserContext(BaseModel):
     id: UUID
-    customer_name: str
+    user_name: str
 
 class LLMContext(BaseModel):
     history: List[Dict[str, str]] = []
@@ -210,8 +210,8 @@ class RealtimeService:
         # They are 'Optional' because they don't exist until the methods run.
         self.user_phone: Optional[str] = None
         self.user_message: Optional[str] = None
-        self.business: Optional[BusinessContext] = None
-        self.customer: Optional[CustomerContext] = None
+        self.tenant: Optional[tenantContext] = None
+        self.user: Optional[UserContext] = None
         self.context: LLMContext = LLMContext() # Initialize with an empty context model
 
     # --- Main Orchestration Method ---
@@ -223,8 +223,8 @@ class RealtimeService:
         logger.info("--- Realtime Task Processing STARTED ---")
         try:
             # Each method now returns a boolean indicating success.
-            if not self._deconstruct_and_fetch_business(): return
-            if not self._fetch_or_create_customer(): return
+            if not self._deconstruct_and_fetch_tenant(): return
+            if not self._fetch_or_create_user(): return
             self._gather_context() # This method can proceed even with no context.
             
             action_plan = self._get_llm_action_plan()
@@ -244,91 +244,91 @@ class RealtimeService:
 
     # --- Workflow Step Methods ---
 
-    def _deconstruct_and_fetch_business(self) -> bool:
+    def _deconstruct_and_fetch_tenant(self) -> bool:
         """
-        Step 1: Parses the payload and fetches the essential Business object.
-        If the business cannot be found, the entire process cannot continue.
+        Step 1: Parses the payload and fetches the essential tenant object.
+        If the tenant cannot be found, the entire process cannot continue.
         """
-        logger.info("[STEP 1/5] Deconstructing payload and fetching business...")
+        logger.info("[STEP 1/5] Deconstructing payload and fetching tenant...")
         try:
             value = self.payload['entry'][0]['changes'][0]['value']
             self.user_phone = value['contacts'][0]['wa_id']
             self.user_message = value['messages'][0]['text']['body']
-            business_phone_id = value['metadata']['phone_number_id']
+            tenant_phone_id = value['metadata']['phone_number_id']
             
-            res = supabase.table('businesses').select('id, system_prompt, business_name, bio').eq('whatsapp_phone_number_id', business_phone_id).single().execute()
+            res = supabase.table('tenants').select('id, system_prompt, tenant_name, bio').eq('whatsapp_phone_number_id', tenant_phone_id).single().execute()
             
             # The Pydantic model validates the structure of the response data.
-            self.business = BusinessContext(**res.data)
-            logger.info(f"[STEP 1/5] Success. Operating for business ID: {self.business.id}")
+            self.tenant = tenantContext(**res.data)
+            logger.info(f"[STEP 1/5] Success. Operating for tenant ID: {self.tenant.id}")
             return True
         except Exception as e:
             # This handles JSON parsing errors, database errors, or Pydantic validation errors.
-            logger.error(f"[STEP 1/5] FAILED. Could not deconstruct payload or find business. Error: {e}", exc_info=True)
+            logger.error(f"[STEP 1/5] FAILED. Could not deconstruct payload or find tenant. Error: {e}", exc_info=True)
             return False
 
 
-    def _fetch_or_create_customer(self) -> bool:
+    def _fetch_or_create_user(self) -> bool:
         """
-        Step 2: Finds an existing customer or creates a new one.
+        Step 2: Finds an existing user or creates a new one.
         This method is now robust and uses the correct Python library patterns.
         """
-        if not self.business or not self.user_phone:
-            logger.error("[STEP 2/5] FAILED: Cannot fetch customer without business or user phone.")
+        if not self.tenant or not self.user_phone:
+            logger.error("[STEP 2/5] FAILED: Cannot fetch user without tenant or user phone.")
             return False
 
-        logger.info(f"[STEP 2/5] Finding or creating customer for phone: {self.user_phone}")
+        logger.info(f"[STEP 2/5] Finding or creating user for phone: {self.user_phone}")
         
         try:
-            # 1. Try to find an existing customer first.
-            find_res = supabase.table('customers') \
-                .select('id, customer_name') \
-                .eq('business_id', self.business.id) \
+            # 1. Try to find an existing user first.
+            find_res = supabase.table('users') \
+                .select('id, user_name') \
+                .eq('tenant_id', self.tenant.id) \
                 .eq('phone_number', self.user_phone) \
                 .limit(1) \
                 .execute()
 
             # The response for a query will always have a .data attribute, which is a list.
             if find_res.data:
-                # Customer exists.
-                customer_data = find_res.data[0]
-                logger.info(f"DEBUG: Data from DB to be validated by Pydantic: {customer_data}")
-                self.customer = CustomerContext(**customer_data)
-                logger.info(f"[STEP 2/5] Found existing customer ID: {self.customer.id}")
+                # User exists.
+                user_data = find_res.data[0]
+                logger.info(f"DEBUG: Data from DB to be validated by Pydantic: {user_data}")
+                self.user = UserContext(**user_data)
+                logger.info(f"[STEP 2/5] Found existing user ID: {self.user.id}")
                 return True
             else:
-                # 2. Customer does not exist. Create them.
+                # 2. User does not exist. Create them.
                 user_name_from_payload = self.payload['entry'][0]['changes'][0]['value']['contacts'][0]['profile']['name']
-                logger.info(f"[STEP 2/5] New customer detected. Creating record for '{user_name_from_payload}'.")
+                logger.info(f"[STEP 2/5] New user detected. Creating record for '{user_name_from_payload}'.")
                 
                 insert_data = {
-                    "business_id": str(self.business.id),
+                    "tenant_id": str(self.tenant.id),
                     "phone_number": self.user_phone,
-                    "customer_name": user_name_from_payload
+                    "user_name": user_name_from_payload
                 }
                 
                 # Execute the insert. The Python library for v1/sync does not support
                 # chaining .select() after .insert(). We must do it in two steps.
                 # We also don't need the returned data from the insert itself.
-                supabase.table('customers').insert(insert_data).execute()
+                supabase.table('users').insert(insert_data).execute()
 
-                # 3. Now that the customer is created, fetch their new record to get the UUID.
+                # 3. Now that the user is created, fetch their new record to get the UUID.
                 # This is the guaranteed way to get the correct data.
-                refetch_res = supabase.table('customers') \
-                    .select('id, customer_name') \
-                    .eq('business_id', self.business.id) \
+                refetch_res = supabase.table('users') \
+                    .select('id, user_name') \
+                    .eq('tenant_id', self.tenant.id) \
                     .eq('phone_number', self.user_phone) \
                     .single() \
                     .execute()
 
                 # Now we can safely create our Pydantic model.
-                self.customer = CustomerContext(**refetch_res.data)
-                logger.info(f"[STEP 2/5] Successfully created and fetched new customer ID: {self.customer.id}")
+                self.user = UserContext(**refetch_res.data)
+                logger.info(f"[STEP 2/5] Successfully created and fetched new user ID: {self.user.id}")
                 return True
 
         except Exception as e:
             # This will catch any Postgrest APIError or other exceptions.
-            logger.error(f"[STEP 2/5] FAILED to fetch or create customer. Error: {e}", exc_info=True)
+            logger.error(f"[STEP 2/5] FAILED to fetch or create user. Error: {e}", exc_info=True)
             return False
 
     def _gather_context(self):
@@ -337,27 +337,27 @@ class RealtimeService:
         This method is designed to be resilient and will simply result in empty
         context lists if any part fails.
         """
-        if not self.business: return # Cannot proceed without a business context
+        if not self.tenant: return # Cannot proceed without a tenant context
 
         logger.info("[STEP 3/5] Gathering context for LLM...")
         
-        # A) Short-term history (only if a customer exists)
-        if self.customer:
-            history_res = supabase.table('conversations').select('role, content').eq('customer_id', self.customer.id).order('created_at', desc=True).limit(20).execute()
+        # A) Short-term history (only if a user exists)
+        if self.user:
+            history_res = supabase.table('conversations').select('role, content').eq('user_id', self.user.id).order('created_at', desc=True).limit(20).execute()
             logger.info(f"Cuatomer history response from supabase: {history_res}")
             self.context.history = list(reversed(history_res.data)) if history_res.data else []
 
-        # B) Long-term memory (only if a customer exists)
-        if self.customer:
-            memory_res = supabase.table('customer_memory').select('fact_key, fact_value').eq('customer_id', self.customer.id).limit(10).execute()
+        # B) Long-term memory (only if a user exists)
+        if self.user:
+            memory_res = supabase.table('user_memory').select('fact_key, fact_value').eq('user_id', self.user.id).limit(10).execute()
             self.context.long_term_memory = memory_res.data or []
 
         # C) RAG Knowledge (always attempt this)
         try:
             if self.user_message:
-                refined_query = query_service.refine_user_query(raw_user_message=self.user_message, business_name=self.business.business_name, business_bio=self.business.bio, conversation_history=self.context.history, business_prompt=self.business.system_prompt )
+                refined_query = query_service.refine_user_query(raw_user_message=self.user_message, tenant_name=self.tenant.tenant_name, tenant_bio=self.tenant.bio, conversation_history=self.context.history, tenant_prompt=self.tenant.system_prompt )
                 embedding = openai_service.get_embedding(refined_query)
-                rag_res = supabase.rpc('match_knowledge', {'query_embedding': embedding, 'p_business_id': str(self.business.id), 'match_threshold': 0.2, 'match_count': 5}).execute()
+                rag_res = supabase.rpc('match_knowledge', {'query_embedding': embedding, 'p_tenant_id': str(self.tenant.id), 'match_threshold': 0.2, 'match_count': 5}).execute()
                 logger.info(f"------------------------------------------------------------------------")
                 logger.info(f"rag knowledge res: {rag_res}")
                 logger.info(f"------------------------------------------------------------------------")
@@ -372,16 +372,16 @@ class RealtimeService:
 
     def _get_llm_action_plan(self) -> ActionPlan | None:	
         """Step 4: Constructs the prompt and calls Gemini to get a structured action plan."""
-        if not self.business: return None
+        if not self.tenant: return None
         logger.info("[STEP 4/5] Calling Gemini for unified action plan...")
         
         # We use .model_dump() to safely serialize our Pydantic models for the prompt
-        prompt = f"""{self.business.system_prompt}
+        prompt = f"""{self.tenant.system_prompt}
 
         **Relevant Long-Term Memory about this User:**
         {json.dumps(self.context.long_term_memory)}
 
-        **Relevant Business Information & FAQs:**
+        **Relevant tenant Information & FAQs:**
         {json.dumps(self.context.rag_knowledge)}
 
         **Recent Conversation History:**
@@ -394,24 +394,24 @@ class RealtimeService:
         ... (rest of the detailed prompt is the same) ...
         """
         
-								# Level 2: The business-specific persona prompt from the DB
-        business_persona_prompt = self.business.system_prompt
-        business_name = self.business # Assuming this field exists from our pydantic model
+								# Level 2: The tenant-specific persona prompt from the DB
+        tenant_persona_prompt = self.tenant.system_prompt
+        tenant_name = self.tenant # Assuming this field exists from our pydantic model
         
 								# Assemble the final prompt using our layered approach
         prompt = f"""
-        **Your Identity:** Your name is Astro. You are an customer assistant representing {	self.business.business_name	}.
+        **Your Identity:** Your name is Astro. You are an user assistant representing {	self.tenant.tenant_name	}.
 
         {SYSTEM_CORE_PROMPT}
 
         ---
-        **BUSINESS-SPECIFIC STYLE GUIDELINES (Adopt this tone):**
-        {business_persona_prompt}
+        **tenant-SPECIFIC STYLE GUIDELINES (Adopt this tone):**
+        {tenant_persona_prompt}
         ---
 
         **CONTEXT (Your ONLY source of truth):**
         - Long-Term Memory: {json.dumps(self.context.long_term_memory)}
-        - Business FAQs & Knowledge: {json.dumps(self.context.rag_knowledge)}
+        - tenant FAQs & Knowledge: {json.dumps(self.context.rag_knowledge)}
 
         **CONVERSATION HISTORY:**
         {json.dumps(self.context.history)}
@@ -431,7 +431,7 @@ class RealtimeService:
 
     def _execute_action_plan(self, action_plan: ActionPlan):
         """Step 5: Parses the LLM's plan and queues follow-up events."""
-        if not self.business or not self.user_phone: return
+        if not self.tenant or not self.user_phone: return
         logger.info(f"[STEP 5/5] Executing action plan: {action_plan}")
 
         logger.info("------------------------------------------------------------")
@@ -449,21 +449,21 @@ class RealtimeService:
                 "type": "text",
                 "text": {"body": response_text},
             }
-            outbound_event = {"event_type": "send_outbound_message", "payload": {"data": whatsapp_payload, "config": {"channel": "whatsapp", "business_id": str(self.business.id)}}}
+            outbound_event = {"event_type": "send_outbound_message", "payload": {"data": whatsapp_payload, "config": {"channel": "whatsapp", "tenant_id": str(self.tenant.id)}}}
             supabase.table('event_dispatcher').insert(outbound_event).execute()
             logger.info(f"Queued outbound message for {self.user_phone}.")
 
         # Then queue background tasks
         for tool_call in tool_calls:
             if tool_call.name == "queue_for_profiling":
-                if not self.customer:
-                    logger.warning("Cannot queue for profiling as customer object does not exist.")
+                if not self.user:
+                    logger.warning("Cannot queue for profiling as user object does not exist.")
                     continue
-                profiling_task = {"event_type": "run_profiling_analysis", "payload": { "customer_id": str(self.customer.id), "business_id": str(self.business.id), "summary": tool_call.arguments.summary_of_new_info, "full_conversation": self.context.history + [{"role": "user", "content": self.user_message}]}}
+                profiling_task = {"event_type": "run_profiling_analysis", "payload": { "user_id": str(self.user.id), "tenant_id": str(self.tenant.id), "summary": tool_call.arguments.summary_of_new_info, "full_conversation": self.context.history + [{"role": "user", "content": self.user_message}]}}
                 supabase.table('profiling_tasks').insert(profiling_task).execute()
-                logger.info(f"Queued task for profiling customer {self.customer.id}.")
+                logger.info(f"Queued task for profiling user {self.user.id}.")
         
-        # Save conversation to DB (only if customer exists)
-        if self.customer and response_text:
-            db_entries = [{'customer_id': str(self.customer.id), 'role': 'user', 'content': self.user_message}, {'customer_id': str(self.customer.id), 'role': 'assistant', 'content': response_text}]
+        # Save conversation to DB (only if user exists)
+        if self.user and response_text:
+            db_entries = [{'user_id': str(self.user.id), 'role': 'user', 'content': self.user_message}, {'user_id': str(self.user.id), 'role': 'assistant', 'content': response_text}]
             supabase.table('conversations').insert(db_entries).execute()

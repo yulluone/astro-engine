@@ -11,7 +11,7 @@ from ...services import openai_service, product_service, tagging_service, menu_i
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    prefix="/businesses/{business_id}/products",
+    prefix="/tenants/{tenant_id}/products",
     tags=["Products"]
 )
 
@@ -23,7 +23,7 @@ router = APIRouter(
 )
 def create_product( # Removed async as supabase-py v1 is sync
     product_data: schemas.ProductCreate,
-    business_id: UUID = Path(..., description="The UUID of the business this product belongs to")
+    tenant_id: UUID = Path(..., description="The UUID of the tenant this product belongs to")
 ):
     """
     Creates a new product using the intelligent workflow:
@@ -55,7 +55,7 @@ def create_product( # Removed async as supabase-py v1 is sync
         # Step 3: Insert Product (without tags first)
         logger.info("[STEP 3/5] Inserting product into database...")
         product_dict = product_data.model_dump()
-        product_dict['business_id'] = str(business_id)
+        product_dict['tenant_id'] = str(tenant_id)
         product_dict['description_embedding'] = product_embedding
         # Add a new column for the generated description to 'products' table:
         # ALTER TABLE products ADD COLUMN generated_description TEXT;
@@ -72,7 +72,7 @@ def create_product( # Removed async as supabase-py v1 is sync
 
         # Step 4: Intelligent Tagging
         final_tag_ids = tagging_service.suggest_and_reconcile_tags(
-            business_id,
+            tenant_id,
             new_product['product_name'],
             synthetic_desc,
             product_embedding,
@@ -97,7 +97,7 @@ def create_product( # Removed async as supabase-py v1 is sync
 )
 def create_products_from_text(
     request_data: schemas.MenuIngestRequest, # New schema needed
-    business_id: UUID = Path(..., description="The UUID of the business")
+    tenant_id: UUID = Path(..., description="The UUID of the tenant")
 ):
     """
     Accepts a large block of unstructured text (e.g., a copied-and-pasted menu),
@@ -107,11 +107,11 @@ def create_products_from_text(
     # For the MVP, we can run it synchronously and let the client wait.
     # In a future sprint, we would queue this in a `batch_tasks` queue.
     
-    logger.info(f"API: Received request to ingest menu text for business {business_id}.")
+    logger.info(f"API: Received request to ingest menu text for tenant {tenant_id}.")
     
     try:
         result = menu_ingestion_service.ingest_menu_from_text(
-            business_id=business_id,
+            tenant_id=tenant_id,
             menu_text=request_data.menu_text
         )
         return result

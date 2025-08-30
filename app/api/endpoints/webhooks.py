@@ -30,7 +30,7 @@ def verify_whatsapp_webhook(
     
 #     try:
 #         # We only care about user-sent text messages for now
-#         if (data.get("object") == "whatsapp_business_account" and
+#         if (data.get("object") == "whatsapp_tenant_account" and
 #             data["entry"][0]["changes"][0]["value"]["messages"][0]["type"] == "text"):
             
 #             event_payload = {"event_type": "new_inbound_message", "payload": data}
@@ -68,27 +68,27 @@ def queue_events(data: dict):
     
     try:
         # We only process user-sent text messages
-        if (data.get("object") == "whatsapp_business_account" and
+        if (data.get("object") == "whatsapp_tenant_account" and
                 data["entry"][0]["changes"][0]["value"].get("messages")):
             
             value = data['entry'][0]['changes'][0]['value']
             message_id = value['messages'][0]['id']
-            business_phone_id = value['metadata']['phone_number_id']
+            tenant_phone_id = value['metadata']['phone_number_id']
 
-            # Find our internal business_id from the phone_number_id
-            business_res = db.supabase.table('businesses').select('id').eq('whatsapp_phone_number_id', business_phone_id).single().execute()
-            if not business_res.data:
-                logger.error(f"Webhook received for unknown business phone ID: {business_phone_id}. Ignoring.")
+            # Find our internal tenant_id from the phone_number_id
+            tenant_res = db.supabase.table('tenants').select('id').eq('whatsapp_phone_number_id', tenant_phone_id).single().execute()
+            if not tenant_res.data:
+                logger.error(f"Webhook received for unknown tenant phone ID: {tenant_phone_id}. Ignoring.")
                 return
             
-            business_id = business_res.data['id']
+            tenant_id = tenant_res.data['id']
             
             # --- Queue BOTH events ---
             
             # Event A: The immediate read receipt
             read_receipt_event = {
                 "event_type": "send_read_receipt",
-                "payload": {"business_id": str(business_id), "message_id": message_id}
+                "payload": {"tenant_id": str(tenant_id), "message_id": message_id}
             }
             db.supabase.table('event_dispatcher').insert(read_receipt_event).execute()
             logger.info("Queued 'send_read_receipt' event.")

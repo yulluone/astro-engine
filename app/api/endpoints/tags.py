@@ -9,27 +9,27 @@ from ...services import openai_service # We need the embedding service here
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    prefix="/businesses/{business_id}/tags",
+    prefix="/tenants/{tenant_id}/tags",
     tags=["Tags"]
 )
 
 @router.post("/", response_model=schemas.TagRead, status_code=status.HTTP_201_CREATED, summary="Create a new tag with its embedding")
 def create_tag(
     tag_data: schemas.TagCreate,
-    business_id: UUID = Path(..., description="The UUID of the business this tag belongs to")
+    tenant_id: UUID = Path(..., description="The UUID of the tenant this tag belongs to")
 ):
     """
     Creates a new product tag and pre-calculates its vector embedding for future searches.
     """
     try:
         tag_name_lower = tag_data.tag_name.lower()
-        logger.info(f"Attempting to create tag '{tag_name_lower}' for business {business_id}")
+        logger.info(f"Attempting to create tag '{tag_name_lower}' for tenant {tenant_id}")
 
         # Generate embedding for the new tag name
         tag_embedding = openai_service.get_embedding(tag_name_lower)
 
         tag_dict = {
-            "business_id": str(business_id),
+            "tenant_id": str(tenant_id),
             "tag_name": tag_name_lower,
             "embedding": tag_embedding # Store the pre-calculated embedding
         }
@@ -41,7 +41,7 @@ def create_tag(
             if response.error and '23505' in response.error.code:
                  raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Tag '{tag_name_lower}' already exists for this business."
+                    detail=f"Tag '{tag_name_lower}' already exists for this tenant."
                 )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

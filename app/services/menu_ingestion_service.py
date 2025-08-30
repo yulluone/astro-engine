@@ -10,11 +10,11 @@ from ..db import supabase
 
 logger = logging.getLogger(__name__)
 
-def ingest_menu_from_text(business_id: UUID, menu_text: str) -> dict:
+def ingest_menu_from_text(tenant_id: UUID, menu_text: str) -> dict:
     """
     Orchestrates the process of parsing menu text and creating products in batch.
     """
-    logger.info(f"MENU INGESTION: Starting for business {business_id}.")
+    logger.info(f"MENU INGESTION: Starting for tenant {tenant_id}.")
     
     # Step 1: Use LLM to parse the unstructured text into structured data
     parsed_products = _parse_menu_with_ai(menu_text)
@@ -32,7 +32,7 @@ def ingest_menu_from_text(business_id: UUID, menu_text: str) -> dict:
     for product_data in parsed_products:
         try:
             # The data is already a validated Pydantic model from the parser
-            _create_single_product(business_id, product_data)
+            _create_single_product(tenant_id, product_data)
             success_count += 1
         except Exception as e:
             logger.error(f"MENU INGESTION: Failed to create product '{product_data.product_name}'. Error: {e}")
@@ -72,7 +72,7 @@ def _parse_menu_with_ai(menu_text: str) -> List[ProductCreate] | None:
     return parsed_model_instance.products
 
 
-def _create_single_product(business_id: UUID, product_data: ProductCreate):
+def _create_single_product(tenant_id: UUID, product_data: ProductCreate):
     """
     This is our robust, single-product creation workflow, now as a helper function.
     """
@@ -87,7 +87,7 @@ def _create_single_product(business_id: UUID, product_data: ProductCreate):
     # 3. Insert Product
     product_dict = product_data.model_dump()
     product_dict.update({
-        'business_id': str(business_id),
+        'tenant_id': str(tenant_id),
         'description_embedding': product_embedding,
         'generated_description': synthetic_desc
     })
@@ -96,7 +96,7 @@ def _create_single_product(business_id: UUID, product_data: ProductCreate):
     
     # 4. Intelligent Tagging
     final_tag_ids = tagging_service.suggest_and_reconcile_tags(
-        business_id, product_data.product_name, synthetic_desc, product_embedding
+        tenant_id, product_data.product_name, synthetic_desc, product_embedding
     )
     
     # 5. Associate Tags

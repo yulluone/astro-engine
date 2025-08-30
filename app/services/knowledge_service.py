@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 # The old text_splitter is no longer needed.
 
-def ingest_text_knowledge(business_id: UUID, text_content: str, source_name: str) -> int:
+def ingest_text_knowledge(tenant_id: UUID, text_content: str, source_name: str) -> int:
     """
     Takes a large block of text, uses an AI to create semantic chunks,
     generates embeddings for them, and stores them in the database.
@@ -35,7 +35,7 @@ def ingest_text_knowledge(business_id: UUID, text_content: str, source_name: str
     # 3. Prepare and insert records
     records_to_insert = [
         {
-            "business_id": str(business_id),
+            "tenant_id": str(tenant_id),
             "content": chunk,
             "embedding": embedding,
             "source_document_name": source_name
