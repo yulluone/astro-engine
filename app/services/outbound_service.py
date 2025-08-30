@@ -18,7 +18,7 @@ def send_whatsapp_message(tenant_id: UUID, message_payload: dict):
 
     # Step 1: Fetch credentials
     try:
-        res = supabase.table('tenants').select('whatsapp_phone_number_id, whatsapp_access_token').eq('id', tenant_id).single().execute()
+        res = supabase.table('businesses').select('whatsapp_phone_number_id, whatsapp_access_token').eq('id', tenant_id).single().execute()
         credentials = res.data
         if not credentials or not credentials.get('whatsapp_access_token') or not credentials.get('whatsapp_phone_number_id'):
             logger.error(f"OUTBOUND: Failed. Missing credentials for tenant {tenant_id}.")
@@ -69,7 +69,7 @@ def send_read_receipt_and_typing(tenant_id: UUID, message_id: str):
 
     # Step 1: Fetch credentials (this logic is the same)
     try:
-        res = supabase.table('tenants').select('whatsapp_phone_number_id, whatsapp_access_token').eq('id', tenant_id).single().execute()
+        res = supabase.table('businesses').select('whatsapp_phone_number_id, whatsapp_access_token').eq('id', tenant_id).single().execute()
         credentials = res.data
         if not credentials or not credentials.get('whatsapp_access_token') or not credentials.get('whatsapp_phone_number_id'):
             logger.error(f"OUTBOUND: Failed. Missing credentials for tenant {tenant_id}.")

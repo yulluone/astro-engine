@@ -34,8 +34,8 @@ async def create_tenant(tenant_data: schemas.tenantCreate):
         # Pydantic V2 uses model_dump(), V1 uses dict()
         tenant_dict = tenant_data.model_dump()
 
-        # Insert the data into the 'tenants' table
-        response = db.supabase.table('tenants').insert(tenant_dict).execute()
+        # Insert the data into the 'businesses' table
+        response = db.supabase.table('businesses').insert(tenant_dict).execute()
 
         # Check for errors from Supabase
         if response.data is None:

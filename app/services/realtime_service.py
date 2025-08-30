@@ -256,7 +256,7 @@ class RealtimeService:
             self.user_message = value['messages'][0]['text']['body']
             tenant_phone_id = value['metadata']['phone_number_id']
             
-            res = supabase.table('tenants').select('id, system_prompt, tenant_name, bio').eq('whatsapp_phone_number_id', tenant_phone_id).single().execute()
+            res = supabase.table('businesses').select('id, system_prompt, tenant_name, bio').eq('whatsapp_phone_number_id', tenant_phone_id).single().execute()
             
             # The Pydantic model validates the structure of the response data.
             self.tenant = tenantContext(**res.data)

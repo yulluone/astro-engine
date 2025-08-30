@@ -76,7 +76,7 @@ def queue_events(data: dict):
             tenant_phone_id = value['metadata']['phone_number_id']
 
             # Find our internal tenant_id from the phone_number_id
-            tenant_res = db.supabase.table('tenants').select('id').eq('whatsapp_phone_number_id', tenant_phone_id).single().execute()
+            tenant_res = db.supabase.table('businesses').select('id').eq('whatsapp_phone_number_id', tenant_phone_id).single().execute()
             if not tenant_res.data:
                 logger.error(f"Webhook received for unknown tenant phone ID: {tenant_phone_id}. Ignoring.")
                 return

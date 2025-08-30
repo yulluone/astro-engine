@@ -39,7 +39,7 @@ def run_profiling_from_event(event_payload: dict):
 
 def _get_tenant(phone_number_id: str) -> dict | None:
     logger.info(f"PROFILING: Fetching tenant with phone_id {phone_number_id}")
-    res = supabase.table('tenants').select('id').eq('whatsapp_phone_number_id', phone_number_id).single().execute()
+    res = supabase.table('businesses').select('id').eq('whatsapp_phone_number_id', phone_number_id).single().execute()
     return res.data
 
 def _find_or_create_user(tenant_id: UUID, phone_number: str, name: str) -> dict:
