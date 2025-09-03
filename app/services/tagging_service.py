@@ -36,7 +36,7 @@ def _get_candidate_tags_by_vector(tenant_id: UUID, product_embedding: list[float
     # Call the new RPC function you created earlier.
     tags_res = supabase.rpc('match_tags', {
         'query_embedding': product_embedding,
-        'p_tenant_id': str(tenant_id),
+        'p_business_id': str(tenant_id),
         'match_threshold': threshold,
         'match_count': limit
     }).execute()
@@ -75,7 +75,7 @@ def _get_ai_refined_tags(product_name: str, product_description: str, candidate_
     """
 
     # Use thinking for this complex task
-    response_str = gemini_service.think_and_generate_text(prompt)
+    response_str = gemini_service.generate_text(prompt)
     if not response_str: return []
 
     try:

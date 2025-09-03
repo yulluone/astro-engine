@@ -283,7 +283,7 @@ class RealtimeService:
             # 1. Try to find an existing user first.
             find_res = supabase.table('users') \
                 .select('id, user_name') \
-                .eq('tenant_id', self.tenant.id) \
+                .eq('business_id', self.tenant.id) \
                 .eq('phone_number', self.user_phone) \
                 .limit(1) \
                 .execute()
@@ -302,7 +302,7 @@ class RealtimeService:
                 logger.info(f"[STEP 2/5] New user detected. Creating record for '{user_name_from_payload}'.")
                 
                 insert_data = {
-                    "tenant_id": str(self.tenant.id),
+                    "business_id": str(self.tenant.id),
                     "phone_number": self.user_phone,
                     "user_name": user_name_from_payload
                 }
@@ -316,7 +316,7 @@ class RealtimeService:
                 # This is the guaranteed way to get the correct data.
                 refetch_res = supabase.table('users') \
                     .select('id, user_name') \
-                    .eq('tenant_id', self.tenant.id) \
+                    .eq('business_id', self.tenant.id) \
                     .eq('phone_number', self.user_phone) \
                     .single() \
                     .execute()
@@ -357,7 +357,7 @@ class RealtimeService:
             if self.user_message:
                 refined_query = query_service.refine_user_query(raw_user_message=self.user_message, tenant_name=self.tenant.tenant_name, tenant_bio=self.tenant.bio, conversation_history=self.context.history, tenant_prompt=self.tenant.system_prompt )
                 embedding = openai_service.get_embedding(refined_query)
-                rag_res = supabase.rpc('match_knowledge', {'query_embedding': embedding, 'p_tenant_id': str(self.tenant.id), 'match_threshold': 0.2, 'match_count': 5}).execute()
+                rag_res = supabase.rpc('match_knowledge', {'query_embedding': embedding, 'p_business_id': str(self.tenant.id), 'match_threshold': 0.2, 'match_count': 5}).execute()
                 logger.info(f"------------------------------------------------------------------------")
                 logger.info(f"rag knowledge res: {rag_res}")
                 logger.info(f"------------------------------------------------------------------------")
